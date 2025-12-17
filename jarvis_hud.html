@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. System Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00d9ff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #001a33 0%, #000 100%);
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d9ff, transparent);
+            animation: scan 4s linear infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .header {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: #00d9ff;
+            text-shadow: 0 0 20px #00d9ff, 0 0 40px #00d9ff;
+            letter-spacing: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00d9ff, 0 0 40px #00d9ff; }
+            to { text-shadow: 0 0 30px #00d9ff, 0 0 60px #00d9ff, 0 0 80px #00d9ff; }
+        }
+
+        .panels {
+            position: absolute;
+            width: 90%;
+            height: 70%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr); /* Changed to 2 rows to fit 6 panels */
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        /* ADJUSTED GRID LAYOUT FOR 7 PANELS */
+        .panels.seven-panels {
+            grid-template-columns: repeat(4, 1fr); /* 4 columns */
+            grid-template-rows: repeat(2, 1fr); /* 2 rows, 7th item will wrap */
+            height: 80%; /* Adjusted height to accommodate the layout */
+            top: 55%; /* Adjusted top to center better */
+        }
+        /* New panel for User Agent */
+        .panels.seven-panels .panel:last-child {
+            grid-column: 1 / span 4; /* Make the last panel span all 4 columns */
+        }
+
+
+        .panel {
+            background: rgba(0, 217, 255, 0.05);
+            border: 2px solid #00d9ff;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+            animation: panelPulse 3s ease-in-out infinite;
+        }
+        
+        /* Specific styling for the wide User Agent panel */
+        .panel.user-agent-panel {
+            grid-column: span 3; /* Make it span 3 columns in the original layout */
+        }
+
+        @keyframes panelPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 217, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(0, 217, 255, 0.5); }
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, transparent, #00d9ff, transparent);
+            opacity: 0;
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.3; }
+        }
+
+        .panel-title {
+            font-size: 1.2em;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #00d9ff;
+            padding-bottom: 10px;
+        }
+
+        .panel-content {
+            font-size: 0.9em;
+            line-height: 1.8;
+            /* Added for the multiline User Agent string */
+            word-break: break-all; 
+            overflow-wrap: break-word; 
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+        }
+
+        .data-label {
+            color: #0088cc;
+        }
+
+        .data-value {
+            color: #00ff88;
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        /* Styling for the full user agent string */
+        .user-agent-string {
+            color: #00ff88;
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+            text-align: left;
+            font-size: 0.8em;
+        }
+
+
+        .loading {
+            color: #ff6600;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .corner-decoration {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid #00d9ff;
+        }
+
+        .corner-decoration.top-left {
+            top: 10px;
+            left: 10px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-decoration.top-right {
+            top: 10px;
+            right: 10px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-decoration.bottom-left {
+            bottom: 10px;
+            left: 10px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-decoration.bottom-right {
+            bottom: 10px;
+            right: 10px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .timestamp {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 1.2em;
+            color: #00d9ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scan-line"></div>
+        <div class="grid"></div>
+        
+        <div class="header">
+            <h1>J.A.R.V.I.S.</h1>
+        </div>
+
+        <div class="panels">
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">System Information</div>
+                <div class="panel-content" id="system-info">
+                    <div class="data-row">
+                        <span class="data-label">Platform:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">Browser Details</div>
+                <div class="panel-content" id="browser-info">
+                    <div class="data-row">
+                        <span class="data-label">Browser:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">Hardware Specs</div>
+                <div class="panel-content" id="hardware-info">
+                    <div class="data-row">
+                        <span class="data-label">CPU Cores:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">Display Configuration</div>
+                <div class="panel-content" id="display-info">
+                    <div class="data-row">
+                        <span class="data-label">Resolution:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">Network Status</div>
+                <div class="panel-content" id="network-info">
+                    <div class="data-row">
+                        <span class="data-label">Status:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">Locale & Time</div>
+                <div class="panel-content" id="locale-info">
+                    <div class="data-row">
+                        <span class="data-label">Language:</span>
+                        <span class="data-value loading">SCANNING...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel user-agent-panel">
+                <div class="corner-decoration top-left"></div>
+                <div class="corner-decoration bottom-right"></div>
+                <div class="panel-title">User Agent String</div>
+                <div class="panel-content" id="user-agent-info">
+                    <div class="data-row">
+                        <span class="data-label">Agent:</span>
+                        <span class="data-value loading">FETCHING...</span>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        // Simulate loading delay for dramatic effect
+        setTimeout(() => {
+            loadSystemInfo();
+            loadBrowserInfo();
+            loadHardwareInfo();
+            loadDisplayInfo();
+            loadNetworkInfo();
+            loadLocaleInfo();
+            loadUserAgentInfo(); // Call the new function
+        }, 1000);
+
+        function loadSystemInfo() {
+            const platform = navigator.platform || 'Unknown';
+            const userAgent = navigator.userAgent;
+            let os = 'Unknown OS';
+            
+            if (userAgent.indexOf('Win') !== -1) os = 'Windows';
+            else if (userAgent.indexOf('Mac') !== -1) os = 'MacOS';
+            else if (userAgent.indexOf('Linux') !== -1) os = 'Linux';
+            else if (userAgent.indexOf('Android') !== -1) os = 'Android';
+            else if (userAgent.indexOf('iOS') !== -1) os = 'iOS';
+
+            document.getElementById('system-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">Operating System:</span>
+                    <span class="data-value">${os}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Platform:</span>
+                    <span class="data-value">${platform}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Online:</span>
+                    <span class="data-value">${navigator.onLine ? 'ACTIVE' : 'OFFLINE'}</span>
+                </div>
+            `;
+        }
+
+        function loadBrowserInfo() {
+            const userAgent = navigator.userAgent;
+            let browserName = 'Unknown';
+            let browserVersion = 'Unknown';
+
+            if (userAgent.indexOf('Firefox') > -1) {
+                browserName = 'Firefox';
+                browserVersion = userAgent.match(/Firefox\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Edg') > -1) {
+                browserName = 'Edge';
+                browserVersion = userAgent.match(/Edg\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('OPR') > -1) {
+                browserName = 'Opera';
+                browserVersion = userAgent.match(/OPR\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Brave') > -1) {
+                browserName = 'Brave';
+                browserVersion = userAgent.match(/Brave\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Vivaldi') > -1) {
+                browserName = 'Vivaldi';
+                browserVersion = userAgent.match(/Vivaldi\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Chrome') > -1) {
+                browserName = 'Chrome';
+                browserVersion = userAgent.match(/Chrome\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Safari') > -1) {
+                browserName = 'Safari';
+                browserVersion = userAgent.match(/Version\/([0-9.]+)/)?.[1] || 'Unknown';
+            }
+
+            document.getElementById('browser-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">Browser:</span>
+                    <span class="data-value">${browserName}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Version:</span>
+                    <span class="data-value">${browserVersion}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Cookies:</span>
+                    <span class="data-value">${navigator.cookieEnabled ? 'ENABLED' : 'DISABLED'}</span>
+                </div>
+            `;
+        }
+
+        function loadHardwareInfo() {
+            const cores = navigator.hardwareConcurrency || 'Unknown';
+            const memory = navigator.deviceMemory || 'Unknown';
+
+            document.getElementById('hardware-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">CPU Cores:</span>
+                    <span class="data-value">${cores}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Device Memory:</span>
+                    <span class="data-value">${memory !== 'Unknown' ? memory + ' GB' : 'Unknown'}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Max Touch Points:</span>
+                    <span class="data-value">${navigator.maxTouchPoints || 0}</span>
+                </div>
+            `;
+        }
+
+        function loadDisplayInfo() {
+            const width = screen.width;
+            const height = screen.height;
+            const colorDepth = screen.colorDepth;
+            const pixelRatio = window.devicePixelRatio || 1;
+
+            document.getElementById('display-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">Resolution:</span>
+                    <span class="data-value">${width} x ${height}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Color Depth:</span>
+                    <span class="data-value">${colorDepth}-bit</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Pixel Ratio:</span>
+                    <span class="data-value">${pixelRatio}x</span>
+                </div>
+            `;
+        }
+
+        async function loadNetworkInfo() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            let effectiveType = 'Unknown';
+            let downlink = 'Unknown';
+            
+            if (connection) {
+                effectiveType = connection.effectiveType || 'Unknown';
+                downlink = connection.downlink ? connection.downlink + ' Mbps' : 'Unknown';
+            }
+
+            // Try to get IP address
+            let ipAddress = 'Fetching...';
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                ipAddress = data.ip;
+            } catch (error) {
+                ipAddress = 'Unavailable';
+            }
+
+            document.getElementById('network-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">Status:</span>
+                    <span class="data-value">${navigator.onLine ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Connection Type:</span>
+                    <span class="data-value">${effectiveType.toUpperCase()}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">IP Address:</span>
+                    <span class="data-value">${ipAddress}</span>
+                </div>
+            `;
+        }
+        
+        // NEW FUNCTION to load User Agent Info
+        function loadUserAgentInfo() {
+            const userAgent = navigator.userAgent;
+            
+            document.getElementById('user-agent-info').innerHTML = `
+                <div class="data-row" style="display: block;">
+                    <span class="data-label">Full String:</span>
+                    <span class="user-agent-string">${userAgent}</span>
+                </div>
+            `;
+        }
+        // END NEW FUNCTION
+
+        function loadLocaleInfo() {
+            const language = navigator.language || 'Unknown';
+            const languages = navigator.languages?.join(', ') || 'Unknown';
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+
+            document.getElementById('locale-info').innerHTML = `
+                <div class="data-row">
+                    <span class="data-label">Language:</span>
+                    <span class="data-value">${language}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Timezone:</span>
+                    <span class="data-value">${timezone}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Preferred Langs:</span>
+                    <span class="data-value">${languages}</span>
+                </div>
+            `;
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            const dateString = now.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            document.getElementById('timestamp').textContent = `${dateString} | ${timeString}`;
+        }
+
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+    </script>
+</body>
+</html>
