@@ -355,6 +355,7 @@
             else if (userAgent.indexOf('Mac') !== -1) os = 'MacOS';
             else if (userAgent.indexOf('Linux') !== -1) os = 'Linux';
             else if (userAgent.indexOf('Android') !== -1) os = 'Android';
+            else if (userAgent.indexOf('Onyx') !== -1) os = 'OnyxOS';
             else if (userAgent.indexOf('iOS') !== -1) os = 'iOS';
 
             document.getElementById('system-info').innerHTML = `
@@ -396,6 +397,9 @@
             } else if (userAgent.indexOf('Chrome') > -1) {
                 browserName = 'Chrome';
                 browserVersion = userAgent.match(/Chrome\/([0-9.]+)/)?.[1] || 'Unknown';
+            } else if (userAgent.indexOf('Nytrogen') > -1) {
+                browserName = 'Nytrogen';
+                browserVersion = userAgent.match(/Nytrogen\/([0-9.]+)/)?.[1] || 'Unknown';
             } else if (userAgent.indexOf('Safari') > -1) {
                 browserName = 'Safari';
                 browserVersion = userAgent.match(/Version\/([0-9.]+)/)?.[1] || 'Unknown';
